@@ -1,0 +1,15 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: test-architecture-master-db
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: library
+    ports:
+      - "3307:3306"  # ホスト3307 → コンテナ3306（ローカルMySQLと競合しない）
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./docker/init:/docker-entrypoint-initdb.d
+
+volumes:
+  db_data:
