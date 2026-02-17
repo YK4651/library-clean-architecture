@@ -26,7 +26,7 @@ func TestUserCanBorrowWhenAllConditionsMet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !service.CanBorrow(u, b) {
+	if !service.CanBorrow(u, 0, b) {
 		t.Error("ユーザーは本を借りられるべきです")
 	}
 }
@@ -34,14 +34,13 @@ func TestUserCanBorrowWhenAllConditionsMet(t *testing.T) {
 func TestUserCannotBorrowWhenMaxLoansReached(t *testing.T) {
 	service := loandm.NewLoanEligibilityService()
 
-	// Create user with max loans (5) using ReconstructUser
+	// Create user (loan count is passed to service)
 	userID := userdm.GenerateUserID()
 	u := userdm.ReconstructUser(
 		userID,
 		"John Doe",
 		"john@example.com",
 		userdm.UserStatusActive,
-		5, // currentLoanCount = MaxLoans
 		0, // overdueFees
 		time.Now(),
 	)
@@ -57,7 +56,8 @@ func TestUserCannotBorrowWhenMaxLoansReached(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if service.CanBorrow(u, b) {
+	// currentLoanCount=5 (MaxLoans) => 借りられない
+	if service.CanBorrow(u, 5, b) {
 		t.Error("ユーザーは本を借りられないべきです（貸出上限に達している）")
 	}
 }

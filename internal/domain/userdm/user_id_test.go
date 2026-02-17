@@ -7,21 +7,21 @@ import (
 )
 
 func TestUserID_GeneratesValidID(t *testing.T) {
-	id := userdm.NewUserID()
+	id := userdm.GenerateUserID()
 
 	if id.Value() == "" {
 		t.Error("Expected non-empty ID value")
 	}
 
-	// ULID should be 26 characters
-	if len(id.Value()) != 26 {
-		t.Errorf("Expected ULID length 26, got: %d", len(id.Value()))
+	// UserID should be 8 digits
+	if len(id.Value()) != 8 {
+		t.Errorf("Expected UserID length 8, got: %d", len(id.Value()))
 	}
 }
 
 func TestUserID_GeneratesUniqueIDs(t *testing.T) {
-	id1 := userdm.NewUserID()
-	id2 := userdm.NewUserID()
+	id1 := userdm.GenerateUserID()
+	id2 := userdm.GenerateUserID()
 
 	if id1.Equals(id2) {
 		t.Error("Expected different IDs to not be equal")
@@ -29,7 +29,7 @@ func TestUserID_GeneratesUniqueIDs(t *testing.T) {
 }
 
 func TestUserID_Equality(t *testing.T) {
-	id1 := userdm.NewUserID()
+	id1 := userdm.GenerateUserID()
 	id2 := id1 // Same reference
 
 	if !id1.Equals(id2) {
@@ -38,7 +38,7 @@ func TestUserID_Equality(t *testing.T) {
 }
 
 func TestUserID_ValueReturnsString(t *testing.T) {
-	id := userdm.NewUserID()
+	id := userdm.GenerateUserID()
 	value := id.Value()
 
 	if value == "" {

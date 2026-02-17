@@ -14,14 +14,9 @@ func NewLoanEligibilityService() *LoanEligibilityService {
 	return &LoanEligibilityService{}
 }
 
-func (s *LoanEligibilityService) CanBorrow(u *userdm.User, b *bookdm.Book) bool {
-	// Rule 1: User must not have reached max loan limit
-	if !u.CanBorrowMore() {
-		return false
-	}
-
-	// Rule 2: User must not have overdue books
-	if u.HasOverdueBooks() {
+func (s *LoanEligibilityService) CanBorrow(u *userdm.User, currentLoanCount int, b *bookdm.Book) bool {
+	// Rule 1 & 2: User must be eligible (not suspended, under max loans, no overdue fees)
+	if !u.CanBorrow(currentLoanCount) {
 		return false
 	}
 
@@ -33,14 +28,17 @@ func (s *LoanEligibilityService) CanBorrow(u *userdm.User, b *bookdm.Book) bool 
 	return true
 }
 
-func (s *LoanEligibilityService) IneligibilityReason(u *userdm.User, b *bookdm.Book) *string {
-	if !u.CanBorrowMore() {
-		reason := fmt.Sprintf("ユーザーは最大貸出制限に達しています（%d冊）", u.GetMaxLoans())
-		return &reason
-	}
-
-	if u.HasOverdueBooks() {
-		reason := "ユーザーは延滞中の本があります"
+func (s *LoanEligibilityService) IneligibilityReason(u *userdm.User, currentLoanCount int, b *bookdm.Book) *string {
+	if !u.CanBorrow(currentLoanCount) {
+		if currentLoanCount >= userdm.MaxLoans {
+			reason := fmt.Sprintf("ユーザーは最大貸出制限に達しています（%d冊）", userdm.MaxLoans)
+			return &reason
+		}
+		if u.OverdueFees() > 0 {
+			reason := "ユーザーは延滞中の本があります"
+			return &reason
+		}
+		reason := "ユーザーは貸出できません（停止中または条件を満たしていません）"
 		return &reason
 	}
 
