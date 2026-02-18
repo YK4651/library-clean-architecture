@@ -26,7 +26,8 @@ func TestUserCanBorrowWhenAllConditionsMet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !service.CanBorrow(u, 0, b) {
+	// ユーザー貸出0件、当該書籍の貸出0件 → 借りられる
+	if !service.CanBorrow(u, 0, b, 0) {
 		t.Error("ユーザーは本を借りられるべきです")
 	}
 }
@@ -57,7 +58,7 @@ func TestUserCannotBorrowWhenMaxLoansReached(t *testing.T) {
 	}
 
 	// currentLoanCount=5 (MaxLoans) => 借りられない
-	if service.CanBorrow(u, 5, b) {
+	if service.CanBorrow(u, 5, b, 0) {
 		t.Error("ユーザーは本を借りられないべきです（貸出上限に達している）")
 	}
 }

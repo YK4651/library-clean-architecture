@@ -2,16 +2,17 @@ package bookdm
 
 import "errors"
 
-// Bookエンティティ - 図書館の本を表す
 type Book struct {
-	id              *BookID
-	title           string
-	author          string
-	isbn            *ISBN
-	totalCopies     int
-	availableCopies int // 仮実装: 本来は Loan テーブルから算出 (SSOT)
+	id          *BookID
+	title       string
+	author      string
+	isbn        *ISBN
+	totalCopies int
+	// availableCopies is NOT stored - derived from Loan table (SSOT)
+	// availableCopies = totalCopies - activeLoansForThisBook
 }
 
+// NewBook - 新しいBookを作成
 func NewBook(
 	id *BookID,
 	title string,
@@ -19,7 +20,6 @@ func NewBook(
 	isbn *ISBN,
 	totalCopies int,
 ) (*Book, error) {
-	// コンストラクタでの検証（フェイルファスト）
 	if len(title) == 0 {
 		return nil, errors.New("book title cannot be empty")
 	}
@@ -31,71 +31,24 @@ func NewBook(
 	}
 
 	return &Book{
-		id:              id,
-		title:           title,
-		author:          author,
-		isbn:            isbn,
-		totalCopies:     totalCopies,
-		availableCopies: totalCopies,
+		id:          id,
+		title:       title,
+		author:      author,
+		isbn:        isbn,
+		totalCopies: totalCopies,
 	}, nil
 }
 
-// ゲッター（Goの慣習: "Get"プレフィックスなし）
-func (b *Book) Id() *BookID {
-	return b.id
-}
+// Book エンティティはルールに焦点を当て、状態は持たない
+// 在庫数はLoanテーブルから導出（単一情報源）
 
-func (b *Book) Title() string {
-	return b.title
-}
-
-// GetTitle returns title (仮実装: LoanEligibilityService.IneligibilityReason 用)
-func (b *Book) GetTitle() string {
-	return b.Title()
-}
-
-func (b *Book) Author() string {
-	return b.author
-}
-
-func (b *Book) ISBN() *ISBN {
-	return b.isbn
-}
-
-func (b *Book) TotalCopies() int {
-	return b.totalCopies
-}
-
-// ビジネスロジックメソッド
-// Book entity focuses on RULES, not STATE
-// Available copies derived from Loan table (Single Source of Truth)
-
-// IsAvailable validates if book has available copies based on provided active loan count
-// The count is provided by the use case (derived from Loan table)
+// IsAvailable - 提供されたアクティブ貸出数に基づいて在庫の有無を検証
+// 貸出数はユースケースによって提供される（Loanテーブルから導出）
 func (b *Book) IsAvailable(currentActiveLoans int) bool {
 	return currentActiveLoans < b.totalCopies
 }
 
-// Available returns whether book has any copies (仮実装: 現在の貸出数は 0 とみなす。本来は UseCase が IsAvailable(count) に渡す)
-func (b *Book) Available() bool {
-	return b.availableCopies > 0
-}
-
-// AvailableCopies returns available copy count (仮実装: テスト用。本来は Repository から取得)
-func (b *Book) AvailableCopies() int {
-	return b.availableCopies
-}
-
-// BorrowCopy decrements available copies (仮実装: テスト用。本来は Loan を追加するだけ)
-func (b *Book) BorrowCopy() error {
-	if b.availableCopies <= 0 {
-		return errors.New("no copies available to borrow")
-	}
-	b.availableCopies--
-	return nil
-}
-
-// State changes are tracked in Loan table (no BorrowCopy/ReturnCopy methods needed)
+// 状態の変更はLoanテーブルで追跡される（BorrowCopy/ReturnCopyメソッドは不要）
 
 // 状態変更メソッド
 func (b *Book) UpdateTitle(newTitle string) error {
@@ -113,3 +66,10 @@ func (b *Book) UpdateAuthor(newAuthor string) error {
 	b.author = newAuthor
 	return nil
 }
+
+// Getters
+func (b *Book) Id() *BookID      { return b.id }
+func (b *Book) Title() string    { return b.title }
+func (b *Book) Author() string   { return b.author }
+func (b *Book) ISBN() *ISBN      { return b.isbn }
+func (b *Book) TotalCopies() int { return b.totalCopies }

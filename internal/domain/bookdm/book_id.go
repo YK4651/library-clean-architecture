@@ -1,6 +1,9 @@
 package bookdm
 
-import "github.com/YK4651/library-clean-architecture/internal/domain/shared"
+import (
+	"github.com/YK4651/library-clean-architecture/internal/domain/shared"
+	"github.com/oklog/ulid/v2"
+)
 
 // BookID は書籍エンティティのID
 // なぜ型エイリアス？shared.IDの機能を継承しつつ、型安全性を確保
@@ -9,6 +12,15 @@ type BookID shared.ID
 // NewBookID は新しいBookIDを生成
 func NewBookID() BookID {
 	return BookID(shared.NewID())
+}
+
+// BookIDFromString はULID文字列からBookIDを復元する（永続化層・リクエスト用）
+func BookIDFromString(s string) (BookID, error) {
+	_, err := ulid.Parse(s)
+	if err != nil {
+		return BookID(""), err
+	}
+	return BookID(shared.ID(s)), nil
 }
 
 // Value は文字列としての値を返す

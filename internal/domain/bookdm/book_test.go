@@ -26,8 +26,8 @@ func TestCanCreateBook(t *testing.T) {
 	if b.Title() != "Clean Architecture" {
 		t.Errorf("Expected title 'Clean Architecture', got '%s'", b.Title())
 	}
-	if b.AvailableCopies() != 3 {
-		t.Errorf("Expected 3 copies, got %d", b.AvailableCopies())
+	if b.TotalCopies() != 3 {
+		t.Errorf("Expected 3 total copies, got %d", b.TotalCopies())
 	}
 }
 
@@ -42,12 +42,13 @@ func TestCanBorrowWhenCopiesAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !b.Available() {
-		t.Error("Expected book to be available for borrowing")
+	// アクティブ貸出0件なら在庫あり（totalCopies=2）
+	if !b.IsAvailable(0) {
+		t.Error("Expected book to be available when no active loans")
 	}
 }
 
-func TestBorrowDecreasesAvailableCopies(t *testing.T) {
+func TestIsAvailableWithActiveLoans(t *testing.T) {
 	bookID := bookdm.NewBookID()
 	isbn, err := bookdm.NewISBN("9780134494166")
 	if err != nil {
@@ -58,17 +59,17 @@ func TestBorrowDecreasesAvailableCopies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = b.BorrowCopy()
-	if err != nil {
-		t.Fatalf("Borrow failed: %v", err)
+	// アクティブ貸出1件 → まだ借りられる
+	if !b.IsAvailable(1) {
+		t.Error("Expected available when 1 active loan and totalCopies=2")
 	}
-
-	if b.AvailableCopies() != 1 {
-		t.Errorf("Expected 1 copy remaining, got %d", b.AvailableCopies())
+	// アクティブ貸出2件以上 → 借りられない
+	if b.IsAvailable(2) {
+		t.Error("Expected not available when active loans >= totalCopies")
 	}
 }
 
-func TestCannotBorrowWhenNoCopies(t *testing.T) {
+func TestIsAvailableWhenNoCopiesLeft(t *testing.T) {
 	bookID := bookdm.NewBookID()
 	isbn, err := bookdm.NewISBN("9780134494166")
 	if err != nil {
@@ -79,15 +80,8 @@ func TestCannotBorrowWhenNoCopies(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Borrow the only copy
-	err = b.BorrowCopy()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Try to borrow again when no copies available
-	err = b.BorrowCopy()
-	if err == nil {
-		t.Error("Expected error when borrowing with 0 available copies")
+	// 1冊のみで1件貸出中 → 借りられない
+	if b.IsAvailable(1) {
+		t.Error("Expected not available when active loans >= totalCopies")
 	}
 }
