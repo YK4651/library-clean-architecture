@@ -25,6 +25,11 @@ func NewUserID(value string) (*UserID, error) {
 	return &UserID{value: value}, nil
 }
 
+// ReconstructUserID は永続化層から復元するためのID（検証なし）
+func ReconstructUserID(value string) *UserID {
+	return &UserID{value: value}
+}
+
 // GenerateUserId はランダムな8桁のUserIdを作成します
 func GenerateUserID() *UserID {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))

@@ -12,5 +12,6 @@ type ILoanRepository interface {
 	CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (int, error)
 	CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (int, error)
 
+	FindByID(ctx context.Context, id *LoanID) (*Loan, error)
 	Save(ctx context.Context, loan *Loan) error
 }

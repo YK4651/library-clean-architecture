@@ -7,8 +7,10 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/YK4651/library-clean-architecture/internal/application/returnbook"
 	"github.com/YK4651/library-clean-architecture/internal/infrastructure/http/handler"
 	"github.com/YK4651/library-clean-architecture/internal/infrastructure/http/middleware"
+	"github.com/YK4651/library-clean-architecture/internal/infrastructure/persistence"
 )
 
 func main() {
@@ -27,7 +29,10 @@ func main() {
 
 	// ルーティング
 	r.POST("/api/books/borrow", handler.BorrowBook)
-	// ハンドラー内で ctx.Request.Context().Value("db") からDB/txを取得
+	// POST /loans/:loanID/returns
+	loanRepo := persistence.NewMySQLLoanRepository(db)
+	returnBookUC := returnbook.NewReturnBookUseCase(loanRepo)
+	r.POST("/api/loans/:loanID/returns", handler.ReturnBook(returnBookUC))
 
 	r.Run(":8080")
 }
