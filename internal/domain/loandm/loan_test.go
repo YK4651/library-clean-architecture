@@ -162,3 +162,21 @@ func TestReturnBook_AlreadyReturned_ReturnsError(t *testing.T) {
 		t.Errorf("Unexpected error: %v", err)
 	}
 }
+
+func TestExtend_Adds14Days(t *testing.T) {
+	dueDate := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
+	borrowedAt := dueDate.AddDate(0, 0, -14)
+	loanID := loandm.NewLoanID()
+	userID := userdm.GenerateUserID()
+	bookID := bookdm.NewBookID()
+	l := loandm.ReconstructLoan(&loanID, userID, &bookID, borrowedAt, dueDate, nil, 0)
+
+	extended := l.Extend()
+	expected := time.Date(2025, 1, 29, 0, 0, 0, 0, time.UTC)
+	if !extended.DueDate().Equal(expected) {
+		t.Errorf("Expected due date %v, got %v", expected, extended.DueDate())
+	}
+	if extended.Id() != l.Id() || extended.UserID() != l.UserID() || extended.BookID() != l.BookID() {
+		t.Error("Extend should preserve id, userID, bookID")
+	}
+}

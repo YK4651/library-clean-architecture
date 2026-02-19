@@ -171,6 +171,21 @@ func (l *Loan) LoanPeriodDays() int {
 	return LoanPeriodDays
 }
 
+const ExtendDays = 14
+
+// Extend は返却期限に14日を追加する。延長回数制限はなし。バリデーションはユースケースで行う。
+func (l *Loan) Extend() *Loan {
+	return &Loan{
+		id:         l.id,
+		userID:     l.userID,
+		bookID:     l.bookID,
+		borrowedAt: l.borrowedAt,
+		dueDate:    l.dueDate.AddDate(0, 0, ExtendDays),
+		returnedAt: l.returnedAt,
+		lateFee:    l.lateFee,
+	}
+}
+
 // ReconstructLoan は永続化層から復元するためのコンストラクタ（due_date, late_fee を指定可能）
 func ReconstructLoan(
 	id *LoanID,

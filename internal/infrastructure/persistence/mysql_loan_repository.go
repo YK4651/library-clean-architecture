@@ -68,9 +68,89 @@ func (r *MySQLLoanRepository) FindByID(ctx context.Context, id *loandm.LoanID) (
 	return loandm.ReconstructLoan(&loanID, uid, &bid, borrowedAt, dueDate, ret, lateFee), nil
 }
 
+func (r *MySQLLoanRepository) FindByIDAndUserID(ctx context.Context, id *loandm.LoanID, userID *userdm.UserID) (*loandm.Loan, error) {
+	query := `SELECT id, user_id, book_id, borrowed_at, due_date, returned_at, late_fee
+	          FROM loans WHERE id = ? AND user_id = ?`
+
+	var idStr, userIDStr, bookIDStr string
+	var borrowedAt, dueDate time.Time
+	var returnedAt sql.NullTime
+	var lateFee int
+
+	err := r.db.QueryRowContext(ctx, query, id.Value(), userID.Value()).Scan(
+		&idStr, &userIDStr, &bookIDStr, &borrowedAt, &dueDate, &returnedAt, &lateFee,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	loanID, _ := loandm.LoanIDFromString(idStr)
+	uid := userdm.ReconstructUserID(userIDStr)
+	bid, err := bookdm.BookIDFromString(bookIDStr)
+	if err != nil {
+		return nil, err
+	}
+
+	var ret *time.Time
+	if returnedAt.Valid {
+		ret = &returnedAt.Time
+	}
+
+	return loandm.ReconstructLoan(&loanID, uid, &bid, borrowedAt, dueDate, ret, lateFee), nil
+}
+
+func (r *MySQLLoanRepository) ListActiveLoansByUser(ctx context.Context, userID *userdm.UserID) ([]*loandm.Loan, error) {
+	query := `SELECT id, user_id, book_id, borrowed_at, due_date, returned_at, late_fee
+	          FROM loans WHERE user_id = ? AND returned_at IS NULL`
+
+	rows, err := r.db.QueryContext(ctx, query, userID.Value())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var loans []*loandm.Loan
+	for rows.Next() {
+		var idStr, userIDStr, bookIDStr string
+		var borrowedAt, dueDate time.Time
+		var returnedAt sql.NullTime
+		var lateFee int
+		if err := rows.Scan(&idStr, &userIDStr, &bookIDStr, &borrowedAt, &dueDate, &returnedAt, &lateFee); err != nil {
+			return nil, err
+		}
+		loanID, _ := loandm.LoanIDFromString(idStr)
+		uid := userdm.ReconstructUserID(userIDStr)
+		bid, err := bookdm.BookIDFromString(bookIDStr)
+		if err != nil {
+			return nil, err
+		}
+		var ret *time.Time
+		if returnedAt.Valid {
+			ret = &returnedAt.Time
+		}
+		loans = append(loans, loandm.ReconstructLoan(&loanID, uid, &bid, borrowedAt, dueDate, ret, lateFee))
+	}
+	return loans, rows.Err()
+}
+
 func (r *MySQLLoanRepository) Save(ctx context.Context, loan *loandm.Loan) error {
 	if loan.ReturnedAt() != nil {
 		return r.updateReturned(ctx, loan)
+	}
+	// 既存のアクティブローンの延長時は UPDATE（due_date 更新）
+	result, err := r.db.ExecContext(ctx,
+		`UPDATE loans SET due_date = ?, late_fee = ? WHERE id = ? AND returned_at IS NULL`,
+		loan.DueDate().Format("2006-01-02 15:04:05"), loan.LateFee(), loan.Id().Value(),
+	)
+	if err != nil {
+		return err
+	}
+	rows, _ := result.RowsAffected()
+	if rows > 0 {
+		return nil
 	}
 	return r.insert(ctx, loan)
 }
