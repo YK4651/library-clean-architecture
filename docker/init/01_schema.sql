@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS loans (
     borrowed_at DATETIME NOT NULL,
     due_date DATETIME NOT NULL,
     returned_at DATETIME DEFAULT NULL,  -- NULL = active loan (borrowed)
+    late_fee INT NOT NULL DEFAULT 0,    -- 延滞料金（円）
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
