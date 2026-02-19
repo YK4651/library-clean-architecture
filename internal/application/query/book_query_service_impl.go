@@ -82,8 +82,85 @@ func (s *BookQueryServiceImpl) GetBookByID(ctx context.Context, bookID string) (
 	}, nil
 }
 
-// ListBooks - すべての書籍を取得（Lesson 6で実装予定）
-func (s *BookQueryServiceImpl) ListBooks(ctx context.Context) ([]*BookReadModel, error) {
-	// Lesson 6で実装予定
-	return []*BookReadModel{}, nil
+// ListBooks - ページネーション付きで書籍を取得（単一JOIN、N+1回避）
+func (s *BookQueryServiceImpl) ListBooks(ctx context.Context, limit, offset int) (*BookListReadModel, error) {
+	db := ctx.Value("db").(*sql.DB)
+
+	// 1. 総件数を取得
+	var total int
+	err := db.QueryRowContext(ctx, "SELECT COUNT(*) FROM books").Scan(&total)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. 単一JOINで書籍＋アクティブ貸出を取得（N+1なし）
+	listQuery := `
+		SELECT
+			b.id,
+			b.isbn,
+			b.title,
+			b.author,
+			l.id as loan_id,
+			l.user_id,
+			l.borrowed_at,
+			l.due_date
+		FROM books b
+		LEFT JOIN loans l ON b.id = l.book_id
+			AND l.returned_at IS NULL
+		ORDER BY b.created_at DESC
+		LIMIT ? OFFSET ?
+	`
+	rows, err := db.QueryContext(ctx, listQuery, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var books []*BookReadModel
+	for rows.Next() {
+		var (
+			id, isbn, title, author   string
+			loanID, userID            sql.NullString
+			borrowedAt, dueDate       sql.NullString
+		)
+		if err := rows.Scan(
+			&id, &isbn, &title, &author,
+			&loanID, &userID, &borrowedAt, &dueDate,
+		); err != nil {
+			return nil, err
+		}
+
+		var currentLoan *LoanReadModel
+		if loanID.Valid {
+			currentLoan = &LoanReadModel{
+				LoanID:       loanID.String,
+				UserID:       userID.String,
+				BorrowedDate: borrowedAt.String,
+				DueDate:      dueDate.String,
+			}
+		}
+
+		books = append(books, &BookReadModel{
+			ID:          id,
+			ISBN:        isbn,
+			Title:       title,
+			Author:      author,
+			IsAvailable: currentLoan == nil,
+			CurrentLoan: currentLoan,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if books == nil {
+		books = []*BookReadModel{}
+	}
+
+	return &BookListReadModel{
+		Books:  books,
+		Total:  total,
+		Limit:  limit,
+		Offset: offset,
+	}, nil
 }

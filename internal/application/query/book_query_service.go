@@ -17,8 +17,9 @@ type BookQueryService interface {
 	// 見つかった場合、書籍のread modelを返し、そうでなければnilを返す
 	GetBookByID(ctx context.Context, bookID string) (*BookReadModel, error)
 
-	// ListBooks - すべての書籍を貸出ステータスと共に取得（Lesson 6用）
+	// ListBooks - ページネーション付きで書籍を貸出ステータスと共に取得（Lesson 6）
 	//
-	// 書籍read modelの配列を返す
-	ListBooks(ctx context.Context) ([]*BookReadModel, error)
+	// limit: 1-100（デフォルト20）, offset: >=0（デフォルト0）
+	// isAvailable は loans テーブルから派生（Single Source of Truth）
+	ListBooks(ctx context.Context, limit, offset int) (*BookListReadModel, error)
 }

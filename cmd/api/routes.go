@@ -7,9 +7,11 @@ import (
 
 func setupRoutes(r *mux.Router, controller *controllers.BookController) {
 	// パスパラメータを持つルート
+	r.HandleFunc("/books", controller.ListBooks).Methods("GET")
 	r.HandleFunc("/books/{bookID}", controller.GetBook).Methods("GET")
 
 	// APIプレフィックス
 	api := r.PathPrefix("/api").Subrouter()
+	api.HandleFunc("/books", controller.ListBooks).Methods("GET")
 	api.HandleFunc("/books/{bookID}", controller.GetBook).Methods("GET")
 }

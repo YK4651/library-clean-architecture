@@ -5,6 +5,7 @@ import (
 
 	"github.com/YK4651/library-clean-architecture/internal/application/query"
 	"github.com/YK4651/library-clean-architecture/internal/application/query/getbook"
+	"github.com/YK4651/library-clean-architecture/internal/application/query/listbooks"
 	"github.com/YK4651/library-clean-architecture/internal/http/controllers"
 )
 
@@ -23,9 +24,10 @@ func SetupDependencies(db *sql.DB) *Dependencies {
 
 	// ユースケースを登録
 	getBookUseCase := getbook.NewGetBookUseCase(bookQueryService)
+	listBooksUseCase := listbooks.NewListBooksUseCase(bookQueryService)
 
 	// コントローラーを登録
-	bookController := controllers.NewBookController(getBookUseCase)
+	bookController := controllers.NewBookController(getBookUseCase, listBooksUseCase)
 
 	return &Dependencies{
 		BookController: bookController,

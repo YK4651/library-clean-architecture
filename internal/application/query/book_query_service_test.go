@@ -152,3 +152,173 @@ func TestBookQueryService_GetBookByID_ReturnsNilWhenNotFound(t *testing.T) {
 		t.Error("Expected nil for non-existent book")
 	}
 }
+
+func TestBookQueryService_ListBooks_PaginationAndTotal(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	books := []struct{ id, isbn, title, author, created string }{
+		{"b-1", "978-00000001", "Book 1", "Author", "2024-01-01 00:00:00"},
+		{"b-2", "978-00000002", "Book 2", "Author", "2024-01-02 00:00:00"},
+		{"b-3", "978-00000003", "Book 3", "Author", "2024-01-03 00:00:00"},
+	}
+	for _, b := range books {
+		_, err := db.Exec(`INSERT INTO books (id, isbn, title, author, created_at) VALUES (?, ?, ?, ?, ?)`,
+			b.id, b.isbn, b.title, b.author, b.created)
+		if err != nil {
+			t.Fatalf("Failed to insert book: %v", err)
+		}
+	}
+
+	queryService := NewBookQueryService()
+	ctx := context.WithValue(context.Background(), "db", db)
+
+	list, err := queryService.ListBooks(ctx, 10, 0)
+	if err != nil {
+		t.Fatalf("ListBooks failed: %v", err)
+	}
+	if list.Total != 3 {
+		t.Errorf("Expected total 3, got %d", list.Total)
+	}
+	if list.Limit != 10 || list.Offset != 0 {
+		t.Errorf("Expected limit=10 offset=0, got limit=%d offset=%d", list.Limit, list.Offset)
+	}
+	if len(list.Books) != 3 {
+		t.Errorf("Expected 3 books, got %d", len(list.Books))
+	}
+}
+
+func TestBookQueryService_ListBooks_EmptyResultReturns200(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	queryService := NewBookQueryService()
+	ctx := context.WithValue(context.Background(), "db", db)
+
+	list, err := queryService.ListBooks(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("ListBooks failed: %v", err)
+	}
+	if list.Total != 0 {
+		t.Errorf("Expected total 0, got %d", list.Total)
+	}
+	if list.Books == nil || len(list.Books) != 0 {
+		t.Errorf("Expected empty books slice, got len=%d", len(list.Books))
+	}
+}
+
+func TestBookQueryService_ListBooks_AvailableWhenNoActiveLoan(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	_, err := db.Exec(`
+		INSERT INTO books (id, isbn, title, author, created_at)
+		VALUES ('b-avail', '978-0-13-468599-1', 'Clean Architecture', 'Robert C. Martin', '2024-01-01 00:00:00')
+	`)
+	if err != nil {
+		t.Fatalf("Failed to insert book: %v", err)
+	}
+
+	queryService := NewBookQueryService()
+	ctx := context.WithValue(context.Background(), "db", db)
+
+	list, err := queryService.ListBooks(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("ListBooks failed: %v", err)
+	}
+	if len(list.Books) != 1 {
+		t.Fatalf("Expected 1 book, got %d", len(list.Books))
+	}
+	if !list.Books[0].IsAvailable {
+		t.Error("Expected book with no active loan to be available")
+	}
+	if list.Books[0].CurrentLoan != nil {
+		t.Error("Expected no current loan")
+	}
+}
+
+func TestBookQueryService_ListBooks_BorrowedBookIsNotAvailable(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	_, _ = db.Exec(`
+		INSERT INTO users (id, name, email, status, created_at)
+		VALUES ('u-001', 'Test User', 'test@example.com', 1, '2024-01-01 00:00:00')
+	`)
+	_, err := db.Exec(`
+		INSERT INTO books (id, isbn, title, author, created_at)
+		VALUES ('b-borrowed', '978-0-321-12742-6', 'DDD', 'Eric Evans', '2024-01-01 00:00:00')
+	`)
+	if err != nil {
+		t.Fatalf("Failed to insert book: %v", err)
+	}
+	_, err = db.Exec(`
+		INSERT INTO loans (id, book_id, user_id, borrowed_at, due_date, returned_at)
+		VALUES ('l-11111', 'b-borrowed', 'u-001', '2024-01-10 00:00:00', '2024-01-24 00:00:00', NULL)
+	`)
+	if err != nil {
+		t.Fatalf("Failed to insert loan: %v", err)
+	}
+
+	queryService := NewBookQueryService()
+	ctx := context.WithValue(context.Background(), "db", db)
+
+	list, err := queryService.ListBooks(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("ListBooks failed: %v", err)
+	}
+	if len(list.Books) != 1 {
+		t.Fatalf("Expected 1 book, got %d", len(list.Books))
+	}
+	if list.Books[0].IsAvailable {
+		t.Error("Expected borrowed book to be not available")
+	}
+	if list.Books[0].CurrentLoan == nil {
+		t.Fatal("Expected current loan")
+	}
+	if list.Books[0].CurrentLoan.LoanID != "l-11111" {
+		t.Errorf("Expected loan id l-11111, got %s", list.Books[0].CurrentLoan.LoanID)
+	}
+}
+
+func TestBookQueryService_ListBooks_ReturnedLoansIgnored(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	_, _ = db.Exec(`
+		INSERT INTO users (id, name, email, status, created_at)
+		VALUES ('u-001', 'Test User', 'test@example.com', 1, '2024-01-01 00:00:00')
+	`)
+	_, err := db.Exec(`
+		INSERT INTO books (id, isbn, title, author, created_at)
+		VALUES ('b-returned', '978-0-321-12742-7', 'Returned Book', 'Author', '2024-01-01 00:00:00')
+	`)
+	if err != nil {
+		t.Fatalf("Failed to insert book: %v", err)
+	}
+	_, err = db.Exec(`
+		INSERT INTO loans (id, book_id, user_id, borrowed_at, due_date, returned_at)
+		VALUES ('l-ret', 'b-returned', 'u-001', '2024-01-01 00:00:00', '2024-01-15 00:00:00', '2024-01-10 00:00:00')
+	`)
+	if err != nil {
+		t.Fatalf("Failed to insert loan: %v", err)
+	}
+
+	queryService := NewBookQueryService()
+	ctx := context.WithValue(context.Background(), "db", db)
+
+	list, err := queryService.ListBooks(ctx, 20, 0)
+	if err != nil {
+		t.Fatalf("ListBooks failed: %v", err)
+	}
+	if len(list.Books) != 1 {
+		t.Fatalf("Expected 1 book, got %d", len(list.Books))
+	}
+	// 返却済みなのでアクティブな貸出はなく、利用可能
+	if !list.Books[0].IsAvailable {
+		t.Error("Expected book with returned loan to be available")
+	}
+	if list.Books[0].CurrentLoan != nil {
+		t.Error("Expected no current loan (returned loans ignored)")
+	}
+}

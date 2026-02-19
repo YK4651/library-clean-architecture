@@ -20,3 +20,11 @@ type LoanReadModel struct {
 	BorrowedDate string // 書籍が借りられた日時
 	DueDate      string // 返却期限
 }
+
+// BookListReadModel - ページネーション付き書籍リストのReadModel (CQRS)
+type BookListReadModel struct {
+	Books  []*BookReadModel // 書籍の配列
+	Total  int              // 全件数（ページネーション用）
+	Limit  int              // 1ページあたりの件数
+	Offset int              // スキップ数
+}
