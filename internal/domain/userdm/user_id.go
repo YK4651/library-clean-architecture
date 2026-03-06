@@ -13,7 +13,7 @@ type UserID struct {
 	value string
 }
 
-// NewUserId は検証付きでUserIdを作成します（8桁）
+// NewUserID は検証付きでUserIDを作成します（8桁）
 func NewUserID(value string) (*UserID, error) {
 	matched, err := regexp.MatchString(`^\d{8}$`, value)
 	if err != nil {
@@ -25,12 +25,7 @@ func NewUserID(value string) (*UserID, error) {
 	return &UserID{value: value}, nil
 }
 
-// ReconstructUserID は永続化層から復元するためのID（検証なし）
-func ReconstructUserID(value string) *UserID {
-	return &UserID{value: value}
-}
-
-// GenerateUserId はランダムな8桁のUserIdを作成します
+// GenerateUserID はランダムな8桁のUserIDを作成します
 func GenerateUserID() *UserID {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	randomId := r.Intn(90000000) + 10000000

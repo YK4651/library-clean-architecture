@@ -20,7 +20,7 @@ func (r *InMemoryUserRepository) Save(u *userdm.User) error {
 	return nil
 }
 
-func (r *InMemoryUserRepository) FindById(id *userdm.UserID) (*userdm.User, error) {
+func (r *InMemoryUserRepository) FindByID(id *userdm.UserID) (*userdm.User, error) {
 	u, exists := r.users[id.Value()]
 	if !exists {
 		return nil, nil

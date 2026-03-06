@@ -3,6 +3,7 @@ package createuser
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/YK4651/library-clean-architecture/internal/domain/userdm"
 )
@@ -15,12 +16,12 @@ type CreateUserInput struct {
 
 // 出力DTO
 type CreateUserOutput struct {
-	ID                 string
-	Name               string
-	Email              string
-	Status             string
-	CurrentBorrowCount int
-	OverdueFees        float64
+	ID          string
+	Name        string
+	Email       string
+	Status      string
+	OverdueFees float64
+	CreatedAt   time.Time
 }
 
 type CreateUserUseCase struct {
@@ -39,7 +40,7 @@ func (uc *CreateUserUseCase) Execute(input CreateUserInput) (*CreateUserOutput, 
 		return nil, fmt.Errorf("failed to check for existing user: %w", err)
 	}
 	if existingUser != nil {
-		return nil, errors.New("ユーザーは既に存在しています")
+		return nil, errors.New("user with this email already exists")
 	}
 
 	// ファクトリーメソッドでユーザーを作成
@@ -50,13 +51,13 @@ func (uc *CreateUserUseCase) Execute(input CreateUserInput) (*CreateUserOutput, 
 		return nil, err
 	}
 
-	// DTOを返す（新規作成時は貸出数0）
+	// DTOを返す
 	return &CreateUserOutput{
-		ID:                 u.Id().Value(),
-		Name:               u.Name(),
-		Email:              u.Email(),
-		Status:             string(u.Status()),
-		CurrentBorrowCount: 0,
-		OverdueFees:        u.OverdueFees(),
+		ID:          u.Id().Value(),
+		Name:        u.Name(),
+		Email:       u.Email(),
+		Status:      string(u.Status()),
+		OverdueFees: u.OverdueFees(),
+		CreatedAt:   u.CreatedAt(),
 	}, nil
 }

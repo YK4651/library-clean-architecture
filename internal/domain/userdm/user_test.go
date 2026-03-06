@@ -10,28 +10,32 @@ func TestUser(t *testing.T) {
 		u := NewUser("田中太郎", "tanaka@example.com")
 
 		if !u.CanBorrow(0) {
-			t.Error("新規ユーザーは本を借りられるべきです（貸出数0）")
+			t.Error("新規ユーザーは本を借りられるべきです")
 		}
 
-		if u.name != "田中太郎" {
-			t.Errorf("名前は '田中太郎' であるべきですが、'%s' でした", u.name)
+		if u.Name() != "田中太郎" {
+			t.Errorf("名前は '田中太郎' であるべきですが、'%s' でした", u.Name())
 		}
-		if u.email != "tanaka@example.com" {
-			t.Errorf("メールは 'tanaka@example.com' であるべきですが、'%s' でした", u.email)
+		if u.Email() != "tanaka@example.com" {
+			t.Errorf("メールは 'tanaka@example.com' であるべきですが、'%s' でした", u.Email())
 		}
-		if u.status != UserStatusActive {
-			t.Errorf("ステータスは 'active' であるべきですが、'%s' でした", u.status)
+		if u.Status() != UserStatusActive {
+			t.Errorf("ステータスは 'active' であるべきですが、'%s' でした", u.Status())
 		}
 	})
 
-	t.Run("CanBorrowAtLimit", func(t *testing.T) {
+	t.Run("Suspend", func(t *testing.T) {
 		u := NewUser("田中太郎", "tanaka@example.com")
-		// 貸出数が MaxLoans なら借りられない
-		if u.CanBorrow(MaxLoans) {
-			t.Error("貸出数が上限のユーザーは本を借りられないべきです")
+
+		u2 := u.Suspend()
+
+		if u2.Status() != UserStatusSuspended {
+			t.Errorf("ステータスは 'suspended' であるべきですが、'%s' でした", u2.Status())
 		}
-		if !u.CanBorrow(MaxLoans - 1) {
-			t.Error("貸出数が上限未満のユーザーは借りられるべきです")
+
+		// 元のユーザーは変更されないべき（不変性）
+		if u.Status() != UserStatusActive {
+			t.Error("元のユーザーは変更されないべきです")
 		}
 	})
 
@@ -47,7 +51,7 @@ func TestUser(t *testing.T) {
 			"田中太郎",
 			"tanaka@example.com",
 			UserStatusSuspended,
-			0, // overdueFees
+			0,
 			time.Now(),
 		)
 
@@ -62,15 +66,16 @@ func TestUser(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		// 最大貸出数のユーザーを再構築
 		u := ReconstructUser(
 			userID,
 			"田中太郎",
 			"tanaka@example.com",
 			UserStatusActive,
-			0, // overdueFees
+			0,
 			time.Now(),
 		)
-		// 貸出数が MaxLoans のとき借りられない
+
 		if u.CanBorrow(MaxLoans) {
 			t.Error("最大貸出数に達したユーザーは本を借りられないべきです")
 		}
@@ -88,7 +93,7 @@ func TestUser(t *testing.T) {
 			"田中太郎",
 			"tanaka@example.com",
 			UserStatusActive,
-			10.50, // overdueFees
+			10.50, // 延滞料金あり
 			time.Now(),
 		)
 
@@ -105,8 +110,8 @@ func TestUser(t *testing.T) {
 			t.Fatalf("延滞料金の追加に失敗しました: %v", err)
 		}
 
-		if u2.overdueFees != 5.00 {
-			t.Errorf("延滞料金は 5.00 であるべきですが、%.2f でした", u2.overdueFees)
+		if u2.OverdueFees() != 5.00 {
+			t.Errorf("延滞料金は 5.00 であるべきですが、%.2f でした", u2.OverdueFees())
 		}
 
 		// 負の料金をテスト
@@ -126,22 +131,33 @@ func TestUser(t *testing.T) {
 			"田中太郎",
 			"tanaka@example.com",
 			UserStatusActive,
-			10.0, // overdueFees
+			0,
 			time.Now(),
 		)
 
-		// PayOverdueFee の不変性をテスト
-		u2, err := u.PayOverdueFee(3.0)
+		// AddOverdueFeeの不変性をテスト
+		u2, err := u.AddOverdueFee(5.00)
 		if err != nil {
-			t.Fatalf("延滞料金の支払いに失敗しました: %v", err)
+			t.Fatalf("延滞料金の追加に失敗しました: %v", err)
 		}
 
-		if u2.overdueFees != 7.0 {
-			t.Errorf("支払い後の延滞料金は 7.0 であるべきですが、%.2f でした", u2.overdueFees)
+		if u2.OverdueFees() != 5.00 {
+			t.Errorf("延滞料金は 5.00 であるべきですが、%.2f でした", u2.OverdueFees())
 		}
 
 		// 元のユーザーは変更されないべき
-		if u.overdueFees != 10.0 {
+		if u.OverdueFees() != 0 {
+			t.Error("元のユーザーは変更されないべきです")
+		}
+
+		// Suspendの不変性をテスト
+		u3 := u.Suspend()
+		if u3.Status() != UserStatusSuspended {
+			t.Errorf("ステータスは 'suspended' であるべきですが、'%s' でした", u3.Status())
+		}
+
+		// 元のユーザーは変更されないべき
+		if u.Status() != UserStatusActive {
 			t.Error("元のユーザーは変更されないべきです")
 		}
 	})

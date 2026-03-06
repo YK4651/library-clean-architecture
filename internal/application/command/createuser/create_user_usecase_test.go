@@ -23,7 +23,7 @@ func (m *mockUserRepository) Save(u *userdm.User) error {
 	return nil
 }
 
-func (m *mockUserRepository) FindById(id *userdm.UserID) (*userdm.User, error) {
+func (m *mockUserRepository) FindByID(id *userdm.UserID) (*userdm.User, error) {
 	u, exists := m.users[id.Value()]
 	if !exists {
 		return nil, nil
@@ -86,9 +86,6 @@ func TestCreateUserUseCase(t *testing.T) {
 		}
 		if output.Status != "active" {
 			t.Errorf("ステータスは 'active' であるべきですが、'%s' でした", output.Status)
-		}
-		if output.CurrentBorrowCount != 0 {
-			t.Errorf("貸出数は 0 であるべきですが、%d でした", output.CurrentBorrowCount)
 		}
 		if output.OverdueFees != 0 {
 			t.Errorf("延滞料金は 0 であるべきですが、%.2f でした", output.OverdueFees)
