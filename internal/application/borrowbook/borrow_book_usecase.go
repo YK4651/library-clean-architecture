@@ -1,6 +1,5 @@
 package borrowbook
 
-//go:generate mockgen -destination=mocks/mock_repositories.go -package=mocks . IUserRepository,IBookRepository,ILoanRepository
 import (
 	"context"
 	"time"
@@ -20,8 +19,8 @@ type IBookRepository interface {
 }
 
 type ILoanRepository interface {
-	CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (int, error)
-	CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (int, error)
+	CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (uint32, error)
+	CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (uint32, error)
 	Save(ctx context.Context, loan *loandm.Loan) error
 }
 

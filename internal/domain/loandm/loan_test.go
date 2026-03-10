@@ -12,11 +12,18 @@ import (
 func TestDueDateIsCalculatedCorrectly(t *testing.T) {
 	borrowedAt := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 
+	// Create Value Objects
 	loanID := loandm.NewLoanID()
-	userID := *userdm.GenerateUserID()
+	userID := userdm.NewUserID()
 	bookID := bookdm.NewBookID()
 
-	l := loandm.NewLoan(loanID, userID, bookID, borrowedAt, nil)
+	l := loandm.NewLoan(
+		loanID,
+		userID,
+		bookID,
+		borrowedAt,
+		nil, // not returned yet
+	)
 
 	expectedDueDate := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
 	if !l.DueDate().Equal(expectedDueDate) {
@@ -28,8 +35,9 @@ func TestLoanIsOverdueAfterDueDate(t *testing.T) {
 	borrowedAt := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
 	currentDate := time.Date(2025, 1, 20, 0, 0, 0, 0, time.UTC)
 
+	// Create Value Objects
 	loanID := loandm.NewLoanID()
-	userID := *userdm.GenerateUserID()
+	userID := userdm.NewUserID()
 	bookID := bookdm.NewBookID()
 
 	l := loandm.NewLoan(loanID, userID, bookID, borrowedAt, nil)
@@ -40,8 +48,9 @@ func TestLoanIsOverdueAfterDueDate(t *testing.T) {
 }
 
 func TestCanMarkLoanAsReturned(t *testing.T) {
+	// Create Value Objects
 	loanID := loandm.NewLoanID()
-	userID := *userdm.GenerateUserID()
+	userID := userdm.NewUserID()
 	bookID := bookdm.NewBookID()
 
 	l := loandm.NewLoan(loanID, userID, bookID, time.Now(), nil)
@@ -50,7 +59,7 @@ func TestCanMarkLoanAsReturned(t *testing.T) {
 		t.Error("Loan should not be returned initially")
 	}
 
-	returned, err := l.MarkAsReturned(nil)
+	returned, err := l.MarkAsReturned(nil) // Pass nil to use current time
 	if err != nil {
 		t.Fatalf("Failed to mark as returned: %v", err)
 	}

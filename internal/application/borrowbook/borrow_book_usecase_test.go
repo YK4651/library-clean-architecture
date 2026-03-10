@@ -34,8 +34,8 @@ func TestBorrowBookUseCase_Success(t *testing.T) {
 	// モックの期待値を設定
 	mockUserRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(u, nil)
 	mockBookRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(b, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(0, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(0, nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(uint32(0), nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(uint32(0), nil)
 	mockLoanRepo.EXPECT().Save(ctx, gomock.Any()).Return(nil)
 
 	useCase := borrowbook.NewBorrowBookUseCase(mockUserRepo, mockBookRepo, mockLoanRepo)
@@ -137,8 +137,8 @@ func TestBorrowBookUseCase_LoanLimitExceeded(t *testing.T) {
 
 	mockUserRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(u, nil)
 	mockBookRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(b, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(5, nil) // 上限に達している
-	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(0, nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(uint32(5), nil) // 上限に達している
+	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(uint32(0), nil)
 
 	useCase := borrowbook.NewBorrowBookUseCase(mockUserRepo, mockBookRepo, mockLoanRepo)
 
@@ -178,8 +178,8 @@ func TestBorrowBookUseCase_BookNotAvailable(t *testing.T) {
 
 	mockUserRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(u, nil)
 	mockBookRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(b, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(0, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(1, nil) // 全コピー貸出中
+	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(uint32(0), nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(uint32(1), nil) // 全コピー貸出中
 
 	useCase := borrowbook.NewBorrowBookUseCase(mockUserRepo, mockBookRepo, mockLoanRepo)
 
@@ -219,8 +219,8 @@ func TestBorrowBookUseCase_CreatesLoanWithCorrectDueDate(t *testing.T) {
 
 	mockUserRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(u, nil)
 	mockBookRepo.EXPECT().FindByID(ctx, gomock.Any()).Return(b, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(0, nil)
-	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(0, nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForUser(ctx, gomock.Any()).Return(uint32(0), nil)
+	mockLoanRepo.EXPECT().CountActiveLoansForBook(ctx, gomock.Any()).Return(uint32(0), nil)
 
 	var savedLoan *loandm.Loan
 	mockLoanRepo.EXPECT().Save(ctx, gomock.Any()).DoAndReturn(

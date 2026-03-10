@@ -15,7 +15,7 @@ func NewLoanEligibilityService() *LoanEligibilityService {
 }
 
 // CanBorrow - currentLoanCount: ユーザーの現在の貸出数, activeLoansForBook: 当該書籍のアクティブ貸出数（SSOT: Loanテーブルから取得）
-func (s *LoanEligibilityService) CanBorrow(u *userdm.User, currentLoanCount int, b *bookdm.Book, activeLoansForBook int) bool {
+func (s *LoanEligibilityService) CanBorrow(u *userdm.User, currentLoanCount uint32, b *bookdm.Book, activeLoansForBook uint32) bool {
 	// Rule 1 & 2: ユーザーが貸出可能か（停止中でないか、上限以下か、延滞料なしか）
 	if !u.CanBorrow(currentLoanCount) {
 		return false
@@ -30,7 +30,7 @@ func (s *LoanEligibilityService) CanBorrow(u *userdm.User, currentLoanCount int,
 }
 
 // IneligibilityReason - 貸出不可の理由を返す
-func (s *LoanEligibilityService) IneligibilityReason(u *userdm.User, currentLoanCount int, b *bookdm.Book, activeLoansForBook int) *string {
+func (s *LoanEligibilityService) IneligibilityReason(u *userdm.User, currentLoanCount uint32, b *bookdm.Book, activeLoansForBook uint32) *string {
 	if !u.CanBorrow(currentLoanCount) {
 		if currentLoanCount >= userdm.MaxLoans {
 			reason := fmt.Sprintf("ユーザーは最大貸出制限に達しています（%d冊）", userdm.MaxLoans)

@@ -51,7 +51,7 @@ func ReconstructUser(
 
 // CanBorrow - 提供された貸出数に基づいて貸出可能性を検証
 // 貸出数はユースケースによって提供される（Loanテーブルから導出）
-func (u *User) CanBorrow(currentLoanCount int) bool {
+func (u *User) CanBorrow(currentLoanCount uint32) bool {
 	if u.status == UserStatusSuspended {
 		return false
 	}

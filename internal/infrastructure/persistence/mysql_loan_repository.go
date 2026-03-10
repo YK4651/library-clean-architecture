@@ -17,18 +17,18 @@ func NewMySQLLoanRepository(db *sql.DB) loandm.ILoanRepository {
 	return &MySQLLoanRepository{db: db}
 }
 
-func (r *MySQLLoanRepository) CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (int, error) {
+func (r *MySQLLoanRepository) CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (uint32, error) {
 	query := "SELECT COUNT(*) FROM loans WHERE user_id = ? AND returned_at IS NULL"
 
-	var count int
+	var count uint32
 	err := r.db.QueryRowContext(ctx, query, userID.Value()).Scan(&count)
 	return count, err
 }
 
-func (r *MySQLLoanRepository) CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (int, error) {
+func (r *MySQLLoanRepository) CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (uint32, error) {
 	query := "SELECT COUNT(*) FROM loans WHERE book_id = ? AND returned_at IS NULL"
 
-	var count int
+	var count uint32
 	err := r.db.QueryRowContext(ctx, query, bookID.Value()).Scan(&count)
 	return count, err
 }

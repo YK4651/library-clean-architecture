@@ -9,8 +9,8 @@ import (
 
 type ILoanRepository interface {
 	// SSOT: Loanテーブルからアクティブな貸出をカウント
-	CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (int, error)
-	CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (int, error)
+	CountActiveLoansForUser(ctx context.Context, userID *userdm.UserID) (uint32, error)
+	CountActiveLoansForBook(ctx context.Context, bookID *bookdm.BookID) (uint32, error)
 
 	Save(ctx context.Context, loan *Loan) error
 }

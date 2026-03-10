@@ -1,5 +1,3 @@
-//go:build integration
-
 package controllers_test
 
 import (

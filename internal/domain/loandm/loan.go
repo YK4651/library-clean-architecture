@@ -84,7 +84,7 @@ func (l *Loan) MarkAsReturned(returnedAt *time.Time) (*Loan, error) {
 	}, nil
 }
 
-func (l *Loan) DaysUntilDue(currentDate *time.Time) int {
+func (l *Loan) DaysUntilDue(currentDate *time.Time) int32 {
 	var now time.Time
 	if currentDate != nil {
 		now = *currentDate
@@ -93,7 +93,7 @@ func (l *Loan) DaysUntilDue(currentDate *time.Time) int {
 	}
 
 	duration := l.dueDate.Sub(now)
-	days := int(duration.Hours() / 24)
+	days := int32(duration.Hours() / 24)
 
 	return days
 }
@@ -123,6 +123,6 @@ func (l *Loan) ReturnedAt() *time.Time {
 	return l.returnedAt
 }
 
-func (l *Loan) LoanPeriodDays() int {
+func (l *Loan) LoanPeriodDays() uint32 {
 	return LoanPeriodDays
 }

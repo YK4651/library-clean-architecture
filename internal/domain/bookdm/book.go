@@ -7,7 +7,7 @@ type Book struct {
 	title       string
 	author      string
 	isbn        *ISBN
-	totalCopies int
+	totalCopies uint32
 	// availableCopies is NOT stored - derived from Loan table (SSOT)
 	// availableCopies = totalCopies - activeLoansForThisBook
 }
@@ -18,7 +18,7 @@ func NewBook(
 	title string,
 	author string,
 	isbn *ISBN,
-	totalCopies int,
+	totalCopies uint32,
 ) (*Book, error) {
 	if len(title) == 0 {
 		return nil, errors.New("book title cannot be empty")
@@ -44,7 +44,7 @@ func NewBook(
 
 // IsAvailable - 提供されたアクティブ貸出数に基づいて在庫の有無を検証
 // 貸出数はユースケースによって提供される（Loanテーブルから導出）
-func (b *Book) IsAvailable(currentActiveLoans int) bool {
+func (b *Book) IsAvailable(currentActiveLoans uint32) bool {
 	return currentActiveLoans < b.totalCopies
 }
 
@@ -68,8 +68,8 @@ func (b *Book) UpdateAuthor(newAuthor string) error {
 }
 
 // Getters
-func (b *Book) Id() BookID       { return b.id }
-func (b *Book) Title() string    { return b.title }
-func (b *Book) Author() string   { return b.author }
-func (b *Book) ISBN() *ISBN      { return b.isbn }
-func (b *Book) TotalCopies() int { return b.totalCopies }
+func (b *Book) Id() BookID          { return b.id }
+func (b *Book) Title() string       { return b.title }
+func (b *Book) Author() string      { return b.author }
+func (b *Book) ISBN() *ISBN         { return b.isbn }
+func (b *Book) TotalCopies() uint32 { return b.totalCopies }
